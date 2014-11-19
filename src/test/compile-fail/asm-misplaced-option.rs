@@ -9,6 +9,7 @@
 // except according to those terms.
 
 // ignore-android
+// ignore-aarch64
 
 #![feature(asm)]
 

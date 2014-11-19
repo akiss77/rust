@@ -9,6 +9,7 @@
 // except according to those terms.
 
 // ignore-android: FIXME (#20004)
+// ignore-aarch64: FIXME(AARCH64): should be implemented someday
 
 #![feature(asm)]
 
