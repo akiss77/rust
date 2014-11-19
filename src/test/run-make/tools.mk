@@ -28,6 +28,10 @@ ifneq (,$(findstring MINGW,$(UNAME)))
 IS_WINDOWS=1
 endif
 
+ifeq ($(shell uname -m),aarch64)
+IS_AARCH64=1
+endif
+
 ifeq ($(UNAME),Darwin)
 RUN = $(TARGET_RPATH_ENV) $(RUN_BINFILE)
 FAIL = $(TARGET_RPATH_ENV) $(RUN_BINFILE) && exit 1 || exit 0
