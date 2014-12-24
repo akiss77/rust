@@ -472,6 +472,9 @@ CFGFLAG$(1)_T_$(2)_H_$(3) = stage1
 
 RPATH_VAR$(1)_T_$(2)_H_$(3) := $$(TARGET_RPATH_VAR$(1)_T_$(2)_H_$(3))
 endif
+ifdef HIDE_STAGE0
+CFGFLAG$(1)_T_$(2)_H_$(3) = stage1
+endif
 endif
 
 STAGE$(1)_T_$(2)_H_$(3) := \
