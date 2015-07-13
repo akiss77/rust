@@ -73,6 +73,10 @@ $(foreach host,$(CFG_HOST), \
 # $(4) is the crate name
 define RUST_TARGET_STAGE_N
 
+ifneq ($(strip $(CFG_BUILD)),$(strip $(3)))
+SYSROOT$(1)_H_$(3) = --sysroot $$(HROOT$(1)_H_$(3))
+endif
+
 $$(TLIB$(1)_T_$(2)_H_$(3))/stamp.$(4): CFG_COMPILER_HOST_TRIPLE = $(2)
 $$(TLIB$(1)_T_$(2)_H_$(3))/stamp.$(4): \
 		$$(CRATEFILE_$(4)) \
@@ -89,8 +93,9 @@ $$(TLIB$(1)_T_$(2)_H_$(3))/stamp.$(4): \
 	$(Q)CFG_LLVM_LINKAGE_FILE=$$(LLVM_LINKAGE_PATH_$(2)) \
 	    $$(subst @,,$$(STAGE$(1)_T_$(2)_H_$(3))) \
 		$$(RUST_LIB_FLAGS_ST$(1)) \
+		$$(SYSROOT$(1)_H_$(3)) \
 		-L "$$(RT_OUTPUT_DIR_$(2))" \
-		$$(LLVM_LIBDIR_RUSTFLAGS_$(2)) \
+		-L "$$(CFG_LLVM_INST_DIR_$(2))/lib" \
 		$$(LLVM_STDCPP_RUSTFLAGS_$(2)) \
 		$$(RUSTFLAGS_$(4)) \
 		$$(RUSTFLAGS$(1)_$(4)) \
@@ -130,6 +135,7 @@ $$(TBIN$(1)_T_$(2)_H_$(3))/$(4)$$(X_$(2)): \
 		| $$(TBIN$(1)_T_$(2)_H_$(3))/
 	@$$(call E, rustc: $$@)
 	$$(STAGE$(1)_T_$(2)_H_$(3)) \
+		$$(SYSROOT$(1)_H_$(3)) \
 		$$(STDCPP_LIBDIR_RUSTFLAGS_$(2)) \
 		-o $$@ $$< --cfg $(4)
 
@@ -150,7 +156,7 @@ $$(TLIB$(1)_T_$(2)_H_$(3))/$(4).o: \
 		$$(HSREQ$(1)_T_$(2)_H_$(3)) \
 		| $$(TBIN$(1)_T_$(2)_H_$(3))/
 	@$$(call E, rustc: $$@)
-	$$(STAGE$(1)_T_$(2)_H_$(3)) --emit=obj -o $$@ $$<
+	$$(STAGE$(1)_T_$(2)_H_$(3)) $$(SYSROOT$(1)_H_$(3)) --emit=obj -o $$@ $$<
 
 ifeq ($$(CFG_RUSTRT_HAS_STARTUP_OBJS_$(2)), 1)
 # Add dependencies on Rust startup objects to all crates that depend on core.
