@@ -1477,7 +1477,7 @@ do
         need_ok "LLVM cmake configure failed"
     fi
 
-    if [ ${do_reconfigure} -ne 0 ] && [ ${is_msvc} -eq 0 ]
+    if [ ${is_msvc} -eq 0 ]
     then
         # LLVM's configure doesn't recognize the new Windows triples yet
         gnu_t=$(to_gnu_triple $t)
@@ -1485,9 +1485,6 @@ do
         msg "configuring LLVM for $gnu_t"
 
         LLVM_TARGETS="--enable-targets=x86,x86_64,arm,aarch64,mips,powerpc"
-        LLVM_BUILD="--build=$gnu_t"
-        LLVM_HOST="--host=$gnu_t"
-        LLVM_TARGET="--target=$gnu_t"
 
         # Disable unused LLVM features
         LLVM_OPTS="$LLVM_DBG_OPTS $LLVM_ASSERTION_OPTS --disable-docs --enable-bindings=none"
@@ -1506,139 +1503,18 @@ do
             ;;
         esac
 
-        case "$CFG_CC" in
-            ("ccache clang")
-            LLVM_CXX_32="ccache clang++ -Qunused-arguments"
-            LLVM_CC_32="ccache clang -Qunused-arguments"
-
-            LLVM_CXX_64="ccache clang++ -Qunused-arguments"
-            LLVM_CC_64="ccache clang -Qunused-arguments"
-            ;;
-            ("clang")
-            LLVM_CXX_32="clang++ -Qunused-arguments"
-            LLVM_CC_32="clang -Qunused-arguments"
-
-            LLVM_CXX_64="clang++ -Qunused-arguments"
-            LLVM_CC_64="clang -Qunused-arguments"
-            ;;
-            ("ccache gcc")
-            LLVM_CXX_32="ccache g++"
-            LLVM_CC_32="ccache gcc"
-
-            LLVM_CXX_64="ccache g++"
-            LLVM_CC_64="ccache gcc"
-            ;;
-            ("gcc")
-            LLVM_CXX_32="g++"
-            LLVM_CC_32="gcc"
-
-            LLVM_CXX_64="g++"
-            LLVM_CC_64="gcc"
-            ;;
-
-            (*)
-            msg "inferring LLVM_CXX/CC from CXX/CC = $CXX/$CC"
-            if [ ! -z "$CFG_ENABLE_CCACHE" ]
-            then
-                if [ -z "$CFG_CCACHE" ]
-                then
-                    err "ccache requested but not found"
-                fi
-
-                LLVM_CXX_32="ccache $CXX"
-                LLVM_CC_32="ccache $CC"
-
-                LLVM_CXX_64="ccache $CXX"
-                LLVM_CC_64="ccache $CC"
-            else
-                LLVM_CXX_32="$CXX"
-                LLVM_CC_32="$CC"
-
-                LLVM_CXX_64="$CXX"
-                LLVM_CC_64="$CC"
-            fi
-
-            ;;
-        esac
-
-        case "$CFG_CPUTYPE" in
-            (x86*)
-                LLVM_CXX_32="$LLVM_CXX_32 -m32"
-                LLVM_CC_32="$LLVM_CC_32 -m32"
-
-                LLVM_CFLAGS_32="-m32"
-                LLVM_CXXFLAGS_32="-m32"
-                LLVM_LDFLAGS_32="-m32"
-
-                LLVM_CFLAGS_64=""
-                LLVM_CXXFLAGS_64=""
-                LLVM_LDFLAGS_64=""
-
-                LLVM_CXX_32="$LLVM_CXX_32 -m32"
-                LLVM_CC_32="$LLVM_CC_32 -m32"
-                ;;
-
-            (*)
-                LLVM_CFLAGS_32=""
-                LLVM_CXXFLAGS_32=""
-                LLVM_LDFLAGS_32=""
-
-                LLVM_CFLAGS_64=""
-                LLVM_CXXFLAGS_64=""
-                LLVM_LDFLAGS_64=""
-                ;;
-        esac
-
-        if echo $t | grep -q x86_64
-        then
-            LLVM_CXX=$LLVM_CXX_64
-            LLVM_CC=$LLVM_CC_64
-            LLVM_CFLAGS=$LLVM_CFLAGS_64
-            LLVM_CXXFLAGS=$LLVM_CXXFLAGS_64
-            LLVM_LDFLAGS=$LLVM_LDFLAGS_64
-        else
-            LLVM_CXX=$LLVM_CXX_32
-            LLVM_CC=$LLVM_CC_32
-            LLVM_CFLAGS=$LLVM_CFLAGS_32
-            LLVM_CXXFLAGS=$LLVM_CXXFLAGS_32
-            LLVM_LDFLAGS=$LLVM_LDFLAGS_32
-        fi
-
-        CXX=$LLVM_CXX
-        CC=$LLVM_CC
-        CFLAGS=$LLVM_CFLAGS
-        CXXFLAGS=$LLVM_CXXFLAGS
-        LDFLAGS=$LLVM_LDFLAGS
-
         if [ -z "$CFG_DISABLE_LIBCPP" ] && [ -n "$CFG_USING_CLANG" ]; then
             LLVM_OPTS="$LLVM_OPTS --enable-libcpp"
         fi
 
-        LLVM_FLAGS="$LLVM_TARGETS $LLVM_OPTS $LLVM_BUILD \
-                        $LLVM_HOST $LLVM_TARGET --with-python=$CFG_PYTHON"
+        LLVM_FLAGS="$LLVM_TARGETS $LLVM_OPTS \
+                        --with-python=$CFG_PYTHON"
 
         msg "configuring LLVM with:"
         msg "$LLVM_FLAGS"
 
-        export CXX
-        export CC
-        export CFLAGS
-        export CXXFLAGS
-        export LDFLAGS
-
-        cd $LLVM_BUILD_DIR
-        case $CFG_SRC_DIR in
-            /* | [a-z]:* | [A-Z]:*)
-                ${CFG_LLVM_SRC_DIR}configure $LLVM_FLAGS
-                ;;
-            *)
-                ${CFG_BUILD_DIR}${CFG_LLVM_SRC_DIR}configure \
-                    $LLVM_FLAGS
-                ;;
-        esac
-        need_ok "LLVM configure failed"
-
-        cd $CFG_BUILD_DIR
+        CFG_LLVM_FLAGS=$(echo CFG_LLVM_FLAGS_${t} | tr - _)
+        eval ${CFG_LLVM_FLAGS}="'$LLVM_FLAGS'"
     fi
 
     # Construct variables for LLVM build and install directories for
@@ -1695,8 +1571,10 @@ putvar CFG_LLVM_SRC_DIR
 
 for t in $CFG_HOST
 do
+    CFG_LLVM_FLAGS=$(echo CFG_LLVM_FLAGS_${t} | tr - _)
     CFG_LLVM_BUILD_DIR=$(echo CFG_LLVM_BUILD_DIR_${t} | tr - _)
     CFG_LLVM_INST_DIR=$(echo CFG_LLVM_INST_DIR_${t} | tr - _)
+    putvar $CFG_LLVM_FLAGS
     putvar $CFG_LLVM_BUILD_DIR
     putvar $CFG_LLVM_INST_DIR
 done
