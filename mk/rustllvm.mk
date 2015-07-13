@@ -14,20 +14,18 @@
 
 define DEF_RUSTLLVM_TARGETS
 
-# FIXME: Lately, on windows, llvm-config --includedir is not enough
+# FIXME: Lately, llvm-config --includedir is not enough
 # to find the llvm includes (probably because we're not actually installing
 # llvm, but using it straight out of the build directory)
-ifdef CFG_WINDOWSY_$(1)
 LLVM_EXTRA_INCDIRS_$(1)= $$(call CFG_CC_INCLUDE_$(1),$(S)src/llvm/include) \
                          $$(call CFG_CC_INCLUDE_$(1),\
 			   $$(CFG_LLVM_BUILD_DIR_$(1))/include)
-endif
 
 RUSTLLVM_OBJS_CS_$(1) := $$(addprefix rustllvm/, \
 	ExecutionEngineWrapper.cpp RustWrapper.cpp PassWrapper.cpp)
 
 RUSTLLVM_INCS_$(1) = $$(LLVM_EXTRA_INCDIRS_$(1)) \
-                     $$(call CFG_CC_INCLUDE_$(1),$$(LLVM_INCDIR_$(1))) \
+                     $$(call CFG_CC_INCLUDE_$(1),$$(LLVM_INCDIR_$(CFG_BUILD))) \
                      $$(call CFG_CC_INCLUDE_$(1),$$(S)src/rustllvm/include)
 RUSTLLVM_OBJS_OBJS_$(1) := $$(RUSTLLVM_OBJS_CS_$(1):rustllvm/%.cpp=$(1)/rustllvm/%.o)
 
@@ -49,7 +47,7 @@ $$(RT_OUTPUT_DIR_$(1))/$$(call CFG_STATIC_LIB_NAME_$(1),rustllvm): \
 $(1)/rustllvm/%.o: $(S)src/rustllvm/%.cpp $$(MKFILE_DEPS) $$(LLVM_CONFIG_$(1))
 	@$$(call E, compile: $$@)
 	$$(Q)$$(call CFG_COMPILE_CXX_$(1), $$@,) \
-		$$(subst  /,//,$$(LLVM_CXXFLAGS_$(1))) \
+		$$(subst  /,//,$$(LLVM_CXXFLAGS_$(CFG_BUILD))) \
 		$$(EXTRA_RUSTLLVM_CXXFLAGS_$(1)) \
 		$$(RUSTLLVM_INCS_$(1)) \
 		$$<

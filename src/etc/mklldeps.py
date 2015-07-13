@@ -18,6 +18,7 @@ components = sys.argv[2].split(' ')
 components = [i for i in components if i]  # ignore extra whitespaces
 enable_static = sys.argv[3]
 llconfig = sys.argv[4]
+target = sys.argv[5]
 
 f.write("""// Copyright 2013 The Rust Project Developers. See the COPYRIGHT
 // file at the top-level directory of this distribution and at
@@ -45,6 +46,28 @@ def run(args):
     return out
 
 f.write("\n")
+
+# target_arch and target_os condition
+arch, os = target.split('-', 1)
+arch = 'x86' if arch == 'i686' or arch == 'i386' else arch
+if 'darwin' in os:
+    os = 'macos'
+elif 'linux' in os:
+    os = 'linux'
+elif 'freebsd' in os:
+    os = 'freebsd'
+elif 'dragonfly' in os:
+    os = 'dragonfly'
+elif 'android' in os:
+    os = 'android'
+elif 'win' in os or 'mingw' in os:
+    os = 'windows'
+cfg = [
+    "target_arch = \"" + arch + "\"",
+    "target_os = \"" + os + "\"",
+]
+
+f.write("#[cfg(all(" + ', '.join(cfg) + "))]\n")
 
 # LLVM libs
 args = [llconfig, '--libs', '--system-libs']
