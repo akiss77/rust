@@ -280,6 +280,7 @@ define DEF_LLVM_VARS
 # The configure script defines these variables with the target triples
 # separated by Z. This defines new ones with the expected format.
 ifeq ($$(CFG_LLVM_ROOT),)
+CFG_LLVM_FLAGS_$(1):=$$(CFG_LLVM_FLAGS_$(subst -,_,$(1)))
 CFG_LLVM_BUILD_DIR_$(1):=$$(CFG_LLVM_BUILD_DIR_$(subst -,_,$(1)))
 CFG_LLVM_INST_DIR_$(1):=$$(CFG_LLVM_INST_DIR_$(subst -,_,$(1)))
 else
@@ -458,7 +459,7 @@ endif
 endif
 
 LD_LIBRARY_PATH_ENV_HOSTDIR$(1)_T_$(2)_H_$(3) := \
-    $$(CURDIR)/$$(HLIB$(1)_H_$(3))
+    $$(CURDIR)/$$(HLIB$(1)_H_$(CFG_BUILD))
 LD_LIBRARY_PATH_ENV_TARGETDIR$(1)_T_$(2)_H_$(3) := \
     $$(CURDIR)/$$(TLIB1_T_$(2)_H_$(CFG_BUILD))
 
@@ -482,9 +483,12 @@ RPATH_VAR$(1)_T_$(2)_H_$(3) := $$(HOST_RPATH_VAR$(1)_T_$(2)_H_$(3))
 # inside of the rustc binary won't get resolved correctly.
 ifeq ($(1),0)
 ifneq ($(strip $(CFG_BUILD)),$(strip $(3)))
-CFGFLAG$(1)_T_$(2)_H_$(3) = stage1
+#CFGFLAG$(1)_T_$(2)_H_$(3) = stage1
 
 RPATH_VAR$(1)_T_$(2)_H_$(3) := $$(TARGET_RPATH_VAR$(1)_T_$(2)_H_$(3))
+endif
+ifdef HIDE_STAGE0
+CFGFLAG$(1)_T_$(2)_H_$(3) = stage1
 endif
 endif
 
@@ -492,7 +496,7 @@ STAGE$(1)_T_$(2)_H_$(3) := \
 	$$(Q)$$(RPATH_VAR$(1)_T_$(2)_H_$(3)) \
 		$$(call CFG_RUN_TARG_$(3),$(1), \
 		$$(CFG_VALGRIND_COMPILE$(1)) \
-		$$(HBIN$(1)_H_$(3))/rustc$$(X_$(3)) \
+		$$(HBIN$(1)_H_$(CFG_BUILD))/rustc$$(X_$(CFG_BUILD)) \
 		--cfg $$(CFGFLAG$(1)_T_$(2)_H_$(3)) \
 		$$(CFG_RUSTC_FLAGS) $$(EXTRAFLAGS_STAGE$(1)) --target=$(2)) \
                 $$(RUSTC_FLAGS_$(2))
@@ -500,7 +504,7 @@ STAGE$(1)_T_$(2)_H_$(3) := \
 PERF_STAGE$(1)_T_$(2)_H_$(3) := \
 	$$(Q)$$(call CFG_RUN_TARG_$(3),$(1), \
 		$$(CFG_PERF_TOOL) \
-		$$(HBIN$(1)_H_$(3))/rustc$$(X_$(3)) \
+		$$(HBIN$(1)_H_$(CFG_BUILD))/rustc$$(X_$(CFG_BUILD)) \
 		--cfg $$(CFGFLAG$(1)_T_$(2)_H_$(3)) \
 		$$(CFG_RUSTC_FLAGS) $$(EXTRAFLAGS_STAGE$(1)) --target=$(2)) \
                 $$(RUSTC_FLAGS_$(2))

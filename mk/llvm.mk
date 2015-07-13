@@ -46,11 +46,22 @@ else
 
 $$(LLVM_CONFIG_$(1)): $$(LLVM_DEPS) $$(LLVM_STAMP_$(1))
 	@$$(call E, make: llvm)
+	$$(Q)(cd $$(CFG_LLVM_BUILD_DIR_$(1)) && \
+		CXX="$$(CXX_$(1))" \
+		CC="$$(CC_$(1))" \
+		CFLAGS="$$(CFG_GCCISH_CFLAGS_$(1))" \
+		CXXFLAGS="$$(CFG_GCCISH_CXXFLAGS_$(1))" \
+		LDFALGS="$$(CFG_GCCISH_LINKLAGS_$(1))" \
+		AR="$$(AR_$(1))" \
+		RANLIB="$$(AR_$(1)) s" \
+		$$(CFG_LLVM_SRC_DIR)configure $$(CFG_LLVM_FLAGS_$(1)) \
+		--build=$$(CFG_GNU_TRIPLE_$(CFG_BUILD)) \
+		--host=$$(CFG_GNU_TRIPLE_$(1)) --target=$$(CFG_GNU_TRIPLE_$(1)))
 	$$(Q)$$(MAKE) -C $$(CFG_LLVM_BUILD_DIR_$(1)) $$(CFG_LLVM_BUILD_ENV_$(1)) ONLY_TOOLS="$$(LLVM_TOOLS)"
 	$$(Q)touch $$(LLVM_CONFIG_$(1))
 
 clean-llvm$(1):
-	$$(Q)$$(MAKE) -C $$(CFG_LLVM_BUILD_DIR_$(1)) clean
+	-$$(Q)$$(MAKE) -C $$(CFG_LLVM_BUILD_DIR_$(1)) clean
 
 endif
 
@@ -83,7 +94,7 @@ endif
 LLVM_LINKAGE_PATH_$(1):=$$(abspath $$(RT_OUTPUT_DIR_$(1))/llvmdeps.rs)
 $$(LLVM_LINKAGE_PATH_$(1)): $(S)src/etc/mklldeps.py $$(LLVM_CONFIG_$(1))
 	$(Q)$(CFG_PYTHON) "$$<" "$$@" "$$(LLVM_COMPONENTS)" "$$(CFG_ENABLE_LLVM_STATIC_STDCPP)" \
-		$$(LLVM_CONFIG_$(1))
+		$$(LLVM_CONFIG_$(CFG_BUILD)) $(1)
 endef
 
 $(foreach host,$(CFG_HOST), \
